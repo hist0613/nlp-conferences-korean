@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import requests
 
 from gpt import get_openai_summarization
-from settings import MAX_NB_GPT3_ATTEMPT
+from settings import MAX_NB_GPT3_ATTEMPT, MAX_NB_SHOW
 
 
 CACHE_FILE = "papers_cache.json"
@@ -132,24 +132,19 @@ def get_paper_list(page_url):
     return papers
 
 
-if __name__ == "__main__":
-    cache = load_cache()
+def save_papers_to_file(
+    papers, volume, start_idx, end_idx, base_dir="summarizations/EMNLP2023"
+):
+    os.makedirs(base_dir, exist_ok=True)
+    file_name = f"papers-{start_idx:04d}-{end_idx:04d}-{volume}.md"
+    file_path = os.path.join(base_dir, file_name)
 
-    papers = get_paper_list("https://aclanthology.org/events/emnlp-2023/")
-
-    prev_volume = ""
-    with open("summarizations.md", "w", encoding="utf-8") as fp:
-        fp.write("# Korean Three-Line Summarizations of EMNLP 2023\n")
-        for paper_info in tqdm(papers):
-            full_paper_info = get_paper_info(paper_info["url"], cache)
-            paper_info.update(full_paper_info)
-
-            response_text = ""
-            if prev_volume != paper_info["paper_volume"]:
-                prev_volume = paper_info["paper_volume"]
-                response_text += f"## {paper_info['paper_volume']}\n"
-
-            response_text += (
+    with open(file_path, "w", encoding="utf-8") as fp:
+        fp.write(
+            f"# Korean Three-Line Summarizations of Papers {start_idx}-{end_idx} in {volume}\n"
+        )
+        for paper_info in papers:
+            response_text = (
                 f"###### {paper_info['paper_title']} ({paper_info['url']})\n"
             )
             response_text += f"- Anthology ID: {paper_info['paper_comment']} \n"
@@ -158,5 +153,36 @@ if __name__ == "__main__":
                 ["    " + line for line in paper_info["paper_summary_kr"].split("\n")]
             )
             response_text += "\n\n"
-
             fp.write(response_text)
+
+
+if __name__ == "__main__":
+    cache = load_cache()
+    papers = get_paper_list("https://aclanthology.org/events/emnlp-2023/")
+
+    temp_papers = []
+    prev_volume = ""
+    start_idx = 1
+
+    for paper_idx, paper_info in tqdm(enumerate(papers, 1)):
+        full_paper_info = get_paper_info(paper_info["url"], cache)
+        paper_info.update(full_paper_info)
+
+        if prev_volume != paper_info["paper_volume"]:
+            if prev_volume:
+                end_idx = paper_idx - 1
+                save_papers_to_file(temp_papers, prev_volume, start_idx, end_idx)
+                temp_papers = []
+                start_idx = paper_idx
+            prev_volume = paper_info["paper_volume"]
+
+        temp_papers.append(paper_info)
+        if len(temp_papers) >= MAX_NB_SHOW:
+            end_idx = paper_idx
+            save_papers_to_file(temp_papers, prev_volume, start_idx, end_idx)
+            temp_papers = []
+            start_idx = paper_idx + 1
+
+    if temp_papers:
+        end_idx = paper_idx
+        save_papers_to_file(temp_papers, prev_volume, start_idx, end_idx)
