@@ -2,6 +2,7 @@
 ###### The Devil Is in the Errors: Leveraging Large Language Models for Fine-grained Machine Translation Evaluation (https://aclanthology.org/2023.wmt-1.100/)
 - Anthology ID: 2023.wmt-1.100 
 - Volume: Proceedings of the Eighth Conference on Machine Translation 
+- Authors: Philipp Koehn | Barry Haddow | Tom Kocmi | Christof Monz 
 - Summary: 
     1. 기존 평가 방법들은 세밀한 실수 분석처럼 개별 오류를 주석으로 표기하는 MQM과 같은 방법보다 상세한 정보를 제공하지 못하고 있다.
     2. 이 논문에서는 대형 언어 모델의 추론 및 문맥 학습 능력을 활용하여 번역 오류를 식별하고 분류하는 AutoMQM이라는 prompting 기법을 제안한다.
